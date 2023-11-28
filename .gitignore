@@ -3,7 +3,15 @@ DerivedDataCache
 Intermediate
 Saved
 .vscode
+.kdev4
 .vs
+CMakeLists.txt
+*.kdev4
+*.pro
+*.code-workspace
+*.workspace
+*.txt
+*.pri
 *.VC.db
 *.opensdf
 *.opendb
