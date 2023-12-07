@@ -20,3 +20,4 @@ CMakeLists.txt
 *.suo
 *.xcodeproj
 *.xcworkspace
+build
