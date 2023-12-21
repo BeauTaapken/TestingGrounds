@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "FirstPersonCharacter.generated.h"
 
+class AGun;
+
 class UInputComponent;
 class USkeletalMeshComponent;
 class USceneComponent;
@@ -45,9 +47,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
 
-	/** Whether to use motion controller location for aiming. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	uint8 bUsingMotionControllers : 1;
+	UPROPERTY(EditDefaultsOnly, Category=Setup)
+	TSubclassOf<AGun> GunBlueprint;
+
+private:
+	AGun* Gun;
 
 protected:
 
