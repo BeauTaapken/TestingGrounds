@@ -21,3 +21,4 @@ CMakeLists.txt
 *.xcodeproj
 *.xcworkspace
 build
+*_BuiltData.uasset
