@@ -116,14 +116,15 @@ void AGun::OnFire()
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 
-	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
+	// try and play a firing animation if specified for 1P
+	if (FireAnimation1P != nullptr && AnimInstance1P != nullptr)
 	{
-		// Get the animation object for the arms mesh
-		if (AnimInstance != nullptr)
-		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
+		AnimInstance1P->Montage_Play(FireAnimation1P, 1.f);
+	}
+	// try and play a firing animation if specified for 3P
+	if (FireAnimation3P != nullptr && AnimInstance3P != nullptr)
+	{
+		AnimInstance3P->Montage_Play(FireAnimation3P, 1.f);
 	}
 }
 

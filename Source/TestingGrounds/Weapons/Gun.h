@@ -57,12 +57,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	USoundBase* FireSound;
 
-	/** AnimMontage to play each time we fire */
+	/** AnimMontages to play each time we fire */ 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	UAnimMontage* FireAnimation;
+	UAnimMontage* FireAnimation1P;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UAnimMontage* FireAnimation3P;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	UAnimInstance* AnimInstance;
+	UPROPERTY()
+	UAnimInstance* AnimInstance1P;
+
+	UPROPERTY()
+	UAnimInstance* AnimInstance3P;
 
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
