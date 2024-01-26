@@ -53,6 +53,17 @@ void AMannequin::BeginPlay()
 	}
 }
 
+void AMannequin::EndPlay(const EEndPlayReason::Type EndPlayReason) 
+{
+	Super::EndPlay(EndPlayReason);
+
+	TArray<class AActor*> AttachedActors;
+	this->GetAttachedActors(AttachedActors);
+	for (AActor* actor : AttachedActors) {
+		actor->Destroy();
+	}
+}
+
 // Called every frame
 void AMannequin::Tick(float DeltaTime)
 {

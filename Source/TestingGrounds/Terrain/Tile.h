@@ -6,6 +6,37 @@
 #include "GameFramework/Actor.h"
 #include "Tile.generated.h"
 
+USTRUCT()
+struct FSpawnPosition
+{
+	GENERATED_USTRUCT_BODY()
+
+	FVector Location; 
+	float Rotation;
+	float Scale;
+};
+
+USTRUCT(BlueprintType)
+struct FSpawnObjects
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	UStaticMeshComponent* floor;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	int MinSpawn = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	int MaxSpawn = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	float Radius = 500;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	float MinScale = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnConfig")
+	float MaxScale = 1;
+};
+
+class UActorPool;
+
 UCLASS()
 class TESTINGGROUNDS_API ATile : public AActor
 {
@@ -15,24 +46,45 @@ public:
 	// Sets default values for this actor's properties
 	ATile();
 
+	UFUNCTION(BlueprintCallable, Category = "Spawning")
+	void PlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<AActor>> ToSpawn);
+
+	UFUNCTION(BlueprintCallable, Category = "Spawning")
+	void PlaceAIPawns(const FSpawnObjects& SpawnObjects, TSubclassOf<APawn> ToSpawn);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UPROPERTY(EditDefaultsOnly, Category="Navigation")
+	FVector NavigationBoundsOffset;
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaTime) override;	
 
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	UStaticMeshComponent* PlaceActors(UStaticMeshComponent* floor, TArray<TSubclassOf<AActor>> ToSpawn, int MinSpawn = 1, int MaxSpawn = 1, float Radius = 500, float MinScale = 1, float MaxScale = 1);
+	UFUNCTION(BlueprintCallable, Category = "Pool")
+	void SetPool(UActorPool* InPool);
 
 private:
 	FBox FixFloorFBox(FBox Box);
 
 	bool CanSpawnAtLocation(FVector Location, float Radius);
 
-	bool FindEmptyLocation(UStaticMeshComponent* floor, FVector& OutLocation, float Radius);
+	TArray<FSpawnPosition> RandomSpawnPositions(const FSpawnObjects& SpawnObjects);
 
-	void PlaceActor(TSubclassOf<AActor> ToSpawn, FVector SpawnPoint, float RandomScale);
+	bool FindEmptyLocation(UStaticMeshComponent* floor, FVector& OutLocation, float Radius);
+	
+	void PositionNavMeshBoundsVolume();
+
+	void PlaceActor(TSubclassOf<AActor> ToSpawn, const FSpawnPosition& SpawnPosition);
+
+	void PlaceAIPawn(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition);
+
+	UActorPool* Pool;
+
+	AActor* NavMeshBoundsVolume;
 
 };
