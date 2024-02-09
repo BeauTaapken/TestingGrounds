@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void NewTileConquered();
 
+	UFUNCTION(BlueprintGetter, Category = "Score")
+	int32 GetScore();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool")
 	class UActorPool* NavMeshBoundsVolumePool;
