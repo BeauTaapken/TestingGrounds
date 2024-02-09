@@ -20,11 +20,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Bounds Pool")
 	void PopulateBoundsVolumePool();
 
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void NewTileConquered();
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pool")
 	class UActorPool* NavMeshBoundsVolumePool;
 
+
 private:
 	void AddToPool(class ANavMeshBoundsVolume *VolumeToAdd);
-	
+
+	int32 Score = 0;
 };

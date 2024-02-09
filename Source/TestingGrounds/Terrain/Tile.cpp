@@ -4,6 +4,7 @@
 #include "Tile.h"
 #include "TestingGrounds/ActorPool.h"
 #include "TestingGrounds/Character/Mannequin.h"
+#include "TestingGrounds/InfiniteTerrainGameMode.h"
 
 // Sets default values
 ATile::ATile()
@@ -24,12 +25,12 @@ void ATile::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	TArray<class AActor*> AttachedActors;
+	TArray<AActor*> AttachedActors;
 	this->GetAttachedActors(AttachedActors);
-	for (AActor* actor : AttachedActors) {
-		//TODO destroy mannequins if they are dead
-		if (!actor->IsA(AMannequin::StaticClass())) {
-			actor->Destroy();
+	for (AActor* Actor : AttachedActors) {
+		//TODO this can still sometimes leave dead AI lying around, probably won't happen enough to cause a crash, but still something that we might want to try and fix
+		if (!Actor->IsA(AMannequin::StaticClass()) || (Actor->IsA(APawn::StaticClass()) && Cast<APawn>(Actor)->GetController() == nullptr)) {
+			Actor->Destroy();
 		}
 	}
 
@@ -50,6 +51,15 @@ void ATile::SetPool(UActorPool* InPool)
 	PositionNavMeshBoundsVolume();
 }
 
+void ATile::TileConquered() 
+{
+	AInfiniteTerrainGameMode* GameMode = Cast<AInfiniteTerrainGameMode>(GetWorld()->GetAuthGameMode());
+	if (GameMode && !IsTileConquered) {
+		GameMode->NewTileConquered();
+		IsTileConquered = true;
+	}
+}
+
 void ATile::PositionNavMeshBoundsVolume() {
   	NavMeshBoundsVolume = Pool->Checkout();
   	if (NavMeshBoundsVolume == nullptr) {
@@ -61,33 +71,36 @@ void ATile::PositionNavMeshBoundsVolume() {
 	FNavigationSystem::Build(*GetWorld());
 }
 
-void ATile::PlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<AActor>> ToSpawn) 
-{
-	if (SpawnObjects.floor == nullptr) {
-		UE_LOG(LogTemp, Error, TEXT("Unable to get floor from Tile, will not spawn things on top"));
-		return;
-	}
-
-	TArray<FSpawnPosition> SpawnPositions = RandomSpawnPositions(SpawnObjects);
-	for (FSpawnPosition SpawnPosition : SpawnPositions) {
-		int itemToSpawnInArray = ToSpawn.Num() > 1 ? 
-				FMath::RandRange(0, ToSpawn.Num()-1) :
-				0;
-		PlaceActor(ToSpawn[itemToSpawnInArray], SpawnPosition);
-	}
-}
-
-void ATile::PlaceAIPawns(const FSpawnObjects& SpawnObjects, TSubclassOf<APawn> ToSpawn) 
+template<class T>
+void ATile::RandomlyPlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<T>> ToSpawn) 
 {
 	if (SpawnObjects.floor == nullptr) {
 		UE_LOG(LogTemp, Error, TEXT("Unable to get floor from Tile, will not spawn things on top"));
 		return;
 	}
 	
-	TArray<FSpawnPosition> SpawnPositions = RandomSpawnPositions(SpawnObjects);
-	for (FSpawnPosition SpawnPosition : SpawnPositions) {
-		PlaceAIPawn(ToSpawn, SpawnPosition);
+	int NumberToSpawn = FMath::RandRange(SpawnObjects.MinSpawn, SpawnObjects.MaxSpawn);
+	for (size_t i = 0; i < NumberToSpawn; i++) {
+		FSpawnPosition SpawnPosition;
+		SpawnPosition.Scale = FMath::RandRange(SpawnObjects.MinScale, SpawnObjects.MaxScale);
+		if (FindEmptyLocation(SpawnObjects.floor, SpawnPosition.Location, SpawnObjects.Radius * SpawnPosition.Scale)) {
+			SpawnPosition.Rotation = FMath::FRandRange(-180.0f, 180.0f);
+			int itemToSpawnInArray = ToSpawn.Num() > 1 ? 
+				FMath::RandRange(0, ToSpawn.Num()-1) :
+				0;
+			PlaceActor(ToSpawn[itemToSpawnInArray], SpawnPosition);
+		}			
 	}
+}
+
+void ATile::PlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<AActor>> ToSpawn) 
+{
+	RandomlyPlaceActors(SpawnObjects, ToSpawn);
+}
+
+void ATile::PlaceAIPawns(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<APawn>> ToSpawn) 
+{
+	RandomlyPlaceActors(SpawnObjects, ToSpawn);
 }
 
 FBox ATile::FixFloorFBox(FBox Box) 
@@ -133,20 +146,26 @@ bool ATile::FindEmptyLocation(UStaticMeshComponent* floor, FVector& OutLocation,
 void ATile::PlaceActor(TSubclassOf<AActor> ToSpawn, const FSpawnPosition& SpawnPosition) 
 {
 	AActor* Spawned = GetWorld()->SpawnActor<AActor>(ToSpawn);
-	Spawned->SetActorRelativeLocation(SpawnPosition.Location);
-	Spawned->SetActorRelativeRotation(FRotator(0, SpawnPosition.Rotation, 0));
-	Spawned->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
-	Spawned->SetActorScale3D(FVector(SpawnPosition.Scale));
+	if (Spawned)
+	{
+		Spawned->SetActorRelativeLocation(SpawnPosition.Location);
+		Spawned->SetActorRelativeRotation(FRotator(0, SpawnPosition.Rotation, 0));
+		Spawned->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+		Spawned->SetActorScale3D(FVector(SpawnPosition.Scale));
+	}
 }
 
-void ATile::PlaceAIPawn(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition) 
+void ATile::PlaceActor(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition) 
 {
 	APawn* Spawned = GetWorld()->SpawnActor<APawn>(ToSpawn);
-	Spawned->SetActorRelativeLocation(SpawnPosition.Location);
-	Spawned->SetActorRelativeRotation(FRotator(0, SpawnPosition.Rotation, 0));
-	Spawned->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
-	Spawned->SpawnDefaultController();
-	Spawned->Tags.Add(FName("Enemy"));
+	if (Spawned)
+	{
+		Spawned->SetActorRelativeLocation(SpawnPosition.Location);
+		Spawned->SetActorRelativeRotation(FRotator(0, SpawnPosition.Rotation, 0));
+		Spawned->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
+		Spawned->SpawnDefaultController();
+		Spawned->Tags.Add(FName("Enemy"));
+	}
 }
 
 bool ATile::CanSpawnAtLocation(FVector Location, float Radius) 

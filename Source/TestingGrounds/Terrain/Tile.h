@@ -50,7 +50,7 @@ public:
 	void PlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<AActor>> ToSpawn);
 
 	UFUNCTION(BlueprintCallable, Category = "Spawning")
-	void PlaceAIPawns(const FSpawnObjects& SpawnObjects, TSubclassOf<APawn> ToSpawn);
+	void PlaceAIPawns(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<APawn>> ToSpawn);
 
 protected:
 	// Called when the game starts or when spawned
@@ -68,8 +68,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pool")
 	void SetPool(UActorPool* InPool);
 
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	void TileConquered();
+
 private:
-	FBox FixFloorFBox(FBox Box);
+	static FBox FixFloorFBox(FBox Box);
 
 	bool CanSpawnAtLocation(FVector Location, float Radius);
 
@@ -78,13 +81,17 @@ private:
 	bool FindEmptyLocation(UStaticMeshComponent* floor, FVector& OutLocation, float Radius);
 	
 	void PositionNavMeshBoundsVolume();
+	
+	template<class T>
+	void RandomlyPlaceActors(const FSpawnObjects& SpawnObjects, TArray<TSubclassOf<T>> ToSpawn);
 
 	void PlaceActor(TSubclassOf<AActor> ToSpawn, const FSpawnPosition& SpawnPosition);
 
-	void PlaceAIPawn(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition);
+	void PlaceActor(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition);
 
 	UActorPool* Pool;
 
 	AActor* NavMeshBoundsVolume;
 
+	bool IsTileConquered = false;
 };
